@@ -8,6 +8,7 @@
   // ---------- Types d'événements et couleurs ----------
   const TYPES = [
     { value: "Tennis", emoji: "🎾", color: "#69db7c" },
+    { value: "Tennis - Service", emoji: "🎯", color: "#66d9e8" },
     { value: "Prépa physique", emoji: "💪", color: "#ff6b6b" },
     { value: "Sorties Amis", emoji: "🍻", color: "#b197fc" },
     { value: "Achats", emoji: "🛒", color: "#ffd43b" },
@@ -246,11 +247,12 @@
 
   // ---------- Panneau latéral : statistiques ----------
   function summarize(events, fromISO, toISO) {
-    const s = { tennisMin: 0, prepaCount: 0, sortiesCount: 0 };
+    const s = { tennisMin: 0, serviceMin: 0, prepaCount: 0, sortiesCount: 0 };
     for (const ev of events) {
       if (ev.date < fromISO || ev.date > toISO) continue;
       const type = effectiveType(ev);
       if (type === "Tennis") s.tennisMin += durationMinutes(ev);
+      else if (type === "Tennis - Service") s.serviceMin += durationMinutes(ev);
       else if (type === "Prépa physique") s.prepaCount += 1;
       else if (type === "Sorties Amis") s.sortiesCount += 1;
     }
@@ -259,12 +261,17 @@
 
   function statValuesHTML(s) {
     const t = typeInfo("Tennis");
+    const sv = typeInfo("Tennis - Service");
     const p = typeInfo("Prépa physique");
     const a = typeInfo("Sorties Amis");
     return `
       <div class="stat-item" style="--c:${t.color}">
         <span class="stat-num">${fmtHours(s.tennisMin)}</span>
         <span class="stat-label">${t.emoji} Tennis</span>
+      </div>
+      <div class="stat-item" style="--c:${sv.color}">
+        <span class="stat-num">${fmtHours(s.serviceMin)}</span>
+        <span class="stat-label">${sv.emoji} Service</span>
       </div>
       <div class="stat-item" style="--c:${p.color}">
         <span class="stat-num">${s.prepaCount}</span>
@@ -321,6 +328,7 @@
     const keys = [...groups.keys()].sort().reverse();
 
     const t = typeInfo("Tennis");
+    const sv = typeInfo("Tennis - Service");
     const p = typeInfo("Prépa physique");
     const a = typeInfo("Sorties Amis");
 
@@ -328,6 +336,7 @@
       <div class="hist-row hist-head">
         <span class="hist-period"></span>
         <span style="color:${t.color}">${t.emoji}</span>
+        <span style="color:${sv.color}">${sv.emoji}</span>
         <span style="color:${p.color}">${p.emoji}</span>
         <span style="color:${a.color}">${a.emoji}</span>
       </div>`;
@@ -339,6 +348,7 @@
       <div class="hist-row">
         <span class="hist-period">${periodLabel(key)}</span>
         <span>${s.tennisMin ? fmtHours(s.tennisMin) : "–"}</span>
+        <span>${s.serviceMin ? fmtHours(s.serviceMin) : "–"}</span>
         <span>${s.prepaCount || "–"}</span>
         <span>${s.sortiesCount || "–"}</span>
       </div>`;

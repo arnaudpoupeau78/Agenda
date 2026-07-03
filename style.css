@@ -62,19 +62,18 @@ body {
 .nav-btn.today { font-size: 0.85rem; }
 .week-label { font-size: 0.9rem; color: var(--text-dim); width: 100%; }
 
-/* Disposition : agenda + panneau latéral de stats */
+/* Disposition : agenda, puis bandeau de stats en dessous */
 .layout {
   display: flex;
+  flex-direction: column;
   gap: 14px;
   padding: 14px;
   max-width: 1500px;
   margin: 0 auto;
-  align-items: flex-start;
 }
 
 /* Grille de la semaine */
 .week {
-  flex: 1;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 10px;
@@ -203,15 +202,12 @@ form input:focus, form textarea:focus, form select:focus { outline: none; border
 .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .btn.danger:hover { background: var(--danger); color: #fff; }
 
-/* Panneau latéral : stats */
+/* Bandeau de stats (sous l'agenda) */
 .sidebar {
-  width: 250px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
   gap: 12px;
-  position: sticky;
-  top: 76px;
+  align-items: start;
 }
 
 .stat-card {
@@ -281,7 +277,7 @@ form input:focus, form textarea:focus, form select:focus { outline: none; border
 .history { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; }
 .hist-row {
   display: grid;
-  grid-template-columns: 1fr 48px 34px 34px;
+  grid-template-columns: 1fr 44px 44px 28px 28px;
   align-items: center;
   gap: 4px;
   padding: 6px 2px;
@@ -302,24 +298,20 @@ form input:focus, form textarea:focus, form select:focus { outline: none; border
 .hist-head { border-bottom: 2px solid var(--border); font-size: 0.9rem; }
 .hist-empty { color: var(--text-dim); font-size: 0.8rem; text-align: center; margin: 8px 0; }
 
-/* Écrans moyens et mobiles : le panneau passe sous l'agenda */
+/* Écrans moyens : 2 cartes côte à côte, l'historique en pleine largeur */
 @media (max-width: 1000px) {
-  .layout { flex-direction: column; }
-  .sidebar {
-    width: 100%;
-    position: static;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
+  .sidebar { grid-template-columns: 1fr 1fr; }
   .sidebar .stat-card:last-child { grid-column: 1 / -1; }
 }
 
-/* Mobile : jours empilés verticalement */
+/* Mobile : jours empilés, affichage pleine largeur */
 @media (max-width: 800px) {
-  .week { grid-template-columns: 1fr; }
+  .layout { padding: 8px; gap: 8px; }
+  .week { grid-template-columns: 1fr; gap: 8px; }
   .day { min-height: 0; }
+  .topbar { padding: 10px 12px; }
   .topbar h1 { font-size: 1rem; }
+  .sidebar { gap: 8px; }
 }
 
 @media (max-width: 520px) {
