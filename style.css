@@ -156,7 +156,7 @@ form label {
   margin-bottom: 12px;
 }
 .optional { font-size: 0.75rem; }
-form input, form textarea {
+form input, form textarea, form select {
   display: block;
   width: 100%;
   margin-top: 5px;
@@ -168,7 +168,7 @@ form input, form textarea {
   font-size: 1rem;
   font-family: inherit;
 }
-form input:focus, form textarea:focus { outline: none; border-color: var(--accent); }
+form input:focus, form textarea:focus, form select:focus { outline: none; border-color: var(--accent); }
 .row { display: flex; gap: 10px; }
 .row label { flex: 1; }
 
@@ -193,6 +193,55 @@ form input:focus, form textarea:focus { outline: none; border-color: var(--accen
 .btn.ghost:hover { color: var(--text); }
 .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .btn.danger:hover { background: var(--danger); color: #fff; }
+
+/* Vue statistiques */
+.view-toggle { font-size: 0.85rem; }
+
+.stats {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 14px;
+}
+.stats-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.granularity.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.stats-loading { color: var(--text-dim); text-align: center; padding: 30px 0; }
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.stats-table th, .stats-table td {
+  padding: 11px 14px;
+  text-align: center;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+.stats-table th { background: var(--surface-2); font-size: 0.82rem; }
+.stats-table td.period {
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.stats-table tr:last-child td { border-bottom: none; }
+.stats-table td { color: var(--text-dim); }
+.stats-table td.period { color: var(--text); }
+
+@media (max-width: 600px) {
+  .stats-table th, .stats-table td { padding: 9px 6px; font-size: 0.8rem; }
+  .stats-table td.period { white-space: normal; }
+}
 
 /* Mobile : jours empilés verticalement */
 @media (max-width: 800px) {

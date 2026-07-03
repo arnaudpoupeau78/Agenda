@@ -13,15 +13,25 @@
 
   <header class="topbar">
     <h1>📅 Mon Agenda</h1>
-    <div class="nav">
+    <div class="nav" id="agendaNav">
       <button id="prevWeek" class="nav-btn" title="Semaine précédente">‹</button>
       <button id="todayBtn" class="nav-btn today">Aujourd'hui</button>
       <button id="nextWeek" class="nav-btn" title="Semaine suivante">›</button>
     </div>
+    <button id="viewToggle" class="nav-btn view-toggle">📊 Stats</button>
     <div id="weekLabel" class="week-label"></div>
   </header>
 
   <main id="week" class="week"></main>
+
+  <!-- Vue statistiques -->
+  <section id="stats" class="stats hidden">
+    <div class="stats-controls">
+      <button id="statsByMonth" class="nav-btn granularity active">Par mois</button>
+      <button id="statsByWeek" class="nav-btn granularity">Par semaine</button>
+    </div>
+    <div id="statsBody" class="stats-body"></div>
+  </section>
 
   <!-- Modale création / édition -->
   <div id="modalOverlay" class="overlay hidden">
@@ -29,6 +39,15 @@
       <h2 id="modalTitle">Nouvel événement</h2>
       <form id="eventForm">
         <input type="hidden" id="eventId">
+        <label>Type
+          <select id="type">
+            <option value="Tennis">🎾 Tennis</option>
+            <option value="Prépa physique">💪 Prépa physique</option>
+            <option value="Sorties Amis">🍻 Sorties Amis</option>
+            <option value="Achats">🛒 Achats</option>
+            <option value="Autre">📌 Autre</option>
+          </select>
+        </label>
         <label>Titre
           <input type="text" id="title" list="titleSuggestions" placeholder="Ex : Tennis, Poker, Séance sport…" required autocomplete="off">
           <datalist id="titleSuggestions"></datalist>
