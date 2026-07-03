@@ -6,32 +6,46 @@
   <meta name="theme-color" content="#1a1d29">
   <title>Mon Agenda</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📅</text></svg>">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <div id="banner" class="banner hidden"></div>
 
   <header class="topbar">
     <h1>📅 Mon Agenda</h1>
-    <div class="nav" id="agendaNav">
+    <div class="nav">
       <button id="prevWeek" class="nav-btn" title="Semaine précédente">‹</button>
       <button id="todayBtn" class="nav-btn today">Aujourd'hui</button>
       <button id="nextWeek" class="nav-btn" title="Semaine suivante">›</button>
     </div>
-    <button id="viewToggle" class="nav-btn view-toggle">📊 Stats</button>
     <div id="weekLabel" class="week-label"></div>
   </header>
 
-  <main id="week" class="week"></main>
+  <main class="layout">
+    <section id="week" class="week"></section>
 
-  <!-- Vue statistiques -->
-  <section id="stats" class="stats hidden">
-    <div class="stats-controls">
-      <button id="statsByMonth" class="nav-btn granularity active">Par mois</button>
-      <button id="statsByWeek" class="nav-btn granularity">Par semaine</button>
-    </div>
-    <div id="statsBody" class="stats-body"></div>
-  </section>
+    <!-- Panneau latéral : statistiques -->
+    <aside class="sidebar">
+      <div class="stat-card">
+        <h3 id="cardWeekTitle">📆 Cette semaine</h3>
+        <div id="cardWeek" class="stat-values"></div>
+      </div>
+      <div class="stat-card">
+        <h3 id="cardMonthTitle">🗓️ Ce mois-ci</h3>
+        <div id="cardMonth" class="stat-values"></div>
+      </div>
+      <div class="stat-card">
+        <div class="card-head">
+          <h3>📊 Historique</h3>
+          <div class="granularity-toggle">
+            <button id="statsByMonth" class="gran-btn active">Mois</button>
+            <button id="statsByWeek" class="gran-btn">Semaine</button>
+          </div>
+        </div>
+        <div id="historyBody" class="history"></div>
+      </div>
+    </aside>
+  </main>
 
   <!-- Modale création / édition -->
   <div id="modalOverlay" class="overlay hidden">
@@ -77,7 +91,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="config.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

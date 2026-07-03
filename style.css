@@ -62,14 +62,23 @@ body {
 .nav-btn.today { font-size: 0.85rem; }
 .week-label { font-size: 0.9rem; color: var(--text-dim); width: 100%; }
 
+/* Disposition : agenda + panneau latéral de stats */
+.layout {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  max-width: 1500px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
 /* Grille de la semaine */
 .week {
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 10px;
-  padding: 14px;
-  max-width: 1400px;
-  margin: 0 auto;
+  min-width: 0;
 }
 
 .day {
@@ -194,53 +203,116 @@ form input:focus, form textarea:focus, form select:focus { outline: none; border
 .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .btn.danger:hover { background: var(--danger); color: #fff; }
 
-/* Vue statistiques */
-.view-toggle { font-size: 0.85rem; }
-
-.stats {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 14px;
-}
-.stats-controls {
+/* Panneau latéral : stats */
+.sidebar {
+  width: 250px;
+  flex-shrink: 0;
   display: flex;
-  gap: 8px;
-  margin-bottom: 14px;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 76px;
 }
-.granularity.active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-.stats-loading { color: var(--text-dim); text-align: center; padding: 30px 0; }
 
-.stats-table {
-  width: 100%;
-  border-collapse: collapse;
+.stat-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
+  padding: 14px;
 }
-.stats-table th, .stats-table td {
-  padding: 11px 14px;
-  text-align: center;
-  font-size: 0.9rem;
-  border-bottom: 1px solid var(--border);
-}
-.stats-table th { background: var(--surface-2); font-size: 0.82rem; }
-.stats-table td.period {
-  text-align: left;
+.stat-card h3 {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
   font-weight: 600;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.card-head h3 { margin: 0; }
+
+.stat-values {
+  display: flex;
+  gap: 8px;
+}
+.stat-item {
+  flex: 1;
+  background: var(--surface-2);
+  border-top: 3px solid var(--c, var(--accent));
+  border-radius: 8px;
+  padding: 8px 4px;
+  text-align: center;
+}
+.stat-num {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--c, var(--text));
+}
+.stat-label {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  margin-top: 3px;
   white-space: nowrap;
 }
-.stats-table tr:last-child td { border-bottom: none; }
-.stats-table td { color: var(--text-dim); }
-.stats-table td.period { color: var(--text); }
 
-@media (max-width: 600px) {
-  .stats-table th, .stats-table td { padding: 9px 6px; font-size: 0.8rem; }
-  .stats-table td.period { white-space: normal; }
+.granularity-toggle {
+  display: flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.gran-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 4px 9px;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.gran-btn.active { background: var(--accent); color: #fff; }
+
+.history { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; }
+.hist-row {
+  display: grid;
+  grid-template-columns: 1fr 48px 34px 34px;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 2px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.hist-row:last-child { border-bottom: none; }
+.hist-row .hist-period {
+  text-align: left;
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hist-head { border-bottom: 2px solid var(--border); font-size: 0.9rem; }
+.hist-empty { color: var(--text-dim); font-size: 0.8rem; text-align: center; margin: 8px 0; }
+
+/* Écrans moyens et mobiles : le panneau passe sous l'agenda */
+@media (max-width: 1000px) {
+  .layout { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  .sidebar .stat-card:last-child { grid-column: 1 / -1; }
 }
 
 /* Mobile : jours empilés verticalement */
@@ -248,4 +320,9 @@ form input:focus, form textarea:focus, form select:focus { outline: none; border
   .week { grid-template-columns: 1fr; }
   .day { min-height: 0; }
   .topbar h1 { font-size: 1rem; }
+}
+
+@media (max-width: 520px) {
+  .sidebar { grid-template-columns: 1fr; }
+  .sidebar .stat-card:last-child { grid-column: auto; }
 }

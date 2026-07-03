@@ -1,4 +1,5 @@
-/* Mon Agenda — vue semaine, création d'événement en 2 clics, vue stats.
+/* Mon Agenda — vue semaine, création d'événement en 2 clics,
+   stats en panneau latéral (semaine affichée, mois en cours, historique).
    Stockage : Supabase si configuré (synchro tel/ordi), sinon localStorage. */
 
 (() => {
@@ -50,33 +51,25 @@
     localStorage.setItem(LOCAL_KEY, JSON.stringify(events));
   }
 
-  const store = {
-    async list(fromISO, toISO) {
-      if (db) {
-        const { data, error } = await db
-          .from("events")
-          .select("*")
-          .gte("date", fromISO)
-          .lte("date", toISO)
-          .order("start_time");
-        if (error) throw error;
-        return data;
-      }
-      return localLoad()
-        .filter((e) => e.date >= fromISO && e.date <= toISO)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time));
-    },
+  // Cache en mémoire de tous les événements (évite de re-télécharger
+  // à chaque navigation) ; invalidé après chaque création/modif/suppression.
+  let allCache = null;
 
+  const store = {
     async listAll() {
+      if (allCache) return allCache;
       if (db) {
         const { data, error } = await db.from("events").select("*").limit(5000);
         if (error) throw error;
-        return data;
+        allCache = data;
+      } else {
+        allCache = localLoad();
       }
-      return localLoad();
+      return allCache;
     },
 
     async create(ev) {
+      allCache = null;
       if (db) {
         const { error } = await db.from("events").insert(ev);
         if (error) throw error;
@@ -88,6 +81,7 @@
     },
 
     async update(id, ev) {
+      allCache = null;
       if (db) {
         const { error } = await db.from("events").update(ev).eq("id", id);
         if (error) throw error;
@@ -97,21 +91,13 @@
     },
 
     async remove(id) {
+      allCache = null;
       if (db) {
         const { error } = await db.from("events").delete().eq("id", id);
         if (error) throw error;
         return;
       }
       localSave(localLoad().filter((e) => e.id !== id));
-    },
-
-    async knownTitles() {
-      if (db) {
-        const { data, error } = await db.from("events").select("title").limit(200);
-        if (error) return [];
-        return [...new Set(data.map((e) => e.title))];
-      }
-      return [...new Set(localLoad().map((e) => e.title))];
     },
   };
 
@@ -146,7 +132,9 @@
   function durationMinutes(ev) {
     const [sh, sm] = ev.start_time.split(":").map(Number);
     const [eh, em] = ev.end_time.split(":").map(Number);
-    return Math.max(0, eh * 60 + em - (sh * 60 + sm));
+    let min = eh * 60 + em - (sh * 60 + sm);
+    if (min < 0) min += 24 * 60; // événement qui passe minuit (ex : 23h -> 1h)
+    return min;
   }
 
   function fmtHours(minutes) {
@@ -159,18 +147,15 @@
   const dayNumFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
   const weekFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const monthFmt = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
-  const shortDateFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const shortMonthFmt = new Intl.DateTimeFormat("fr-FR", { month: "short", year: "numeric" });
 
   // ---------- État ----------
   let currentMonday = mondayOf(new Date());
-  let currentView = "agenda"; // "agenda" | "stats"
-  let statsMode = "month"; // "month" | "week"
+  let statsMode = "month"; // granularité de l'historique
 
   // ---------- Éléments ----------
   const $ = (id) => document.getElementById(id);
   const weekEl = $("week");
-  const statsEl = $("stats");
-  const statsBody = $("statsBody");
   const weekLabel = $("weekLabel");
   const banner = $("banner");
   const overlay = $("modalOverlay");
@@ -200,7 +185,10 @@
 
     let events = [];
     try {
-      events = await store.list(fromISO, toISOStr);
+      const all = await store.listAll();
+      events = all
+        .filter((e) => e.date >= fromISO && e.date <= toISOStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
     } catch (err) {
       console.error(err);
       showBanner("❌ Erreur de connexion à la base de données : " + (err.message || err), true);
@@ -252,120 +240,127 @@
 
       weekEl.appendChild(cell);
     }
+
+    renderSidebar();
   }
 
-  // ---------- Vue statistiques ----------
-  function periodKey(ev) {
-    if (statsMode === "month") return ev.date.slice(0, 7); // "2026-07"
-    return toISO(mondayOf(parseISO(ev.date))); // lundi de la semaine
+  // ---------- Panneau latéral : statistiques ----------
+  function summarize(events, fromISO, toISO) {
+    const s = { tennisMin: 0, prepaCount: 0, sortiesCount: 0 };
+    for (const ev of events) {
+      if (ev.date < fromISO || ev.date > toISO) continue;
+      const type = effectiveType(ev);
+      if (type === "Tennis") s.tennisMin += durationMinutes(ev);
+      else if (type === "Prépa physique") s.prepaCount += 1;
+      else if (type === "Sorties Amis") s.sortiesCount += 1;
+    }
+    return s;
+  }
+
+  function statValuesHTML(s) {
+    const t = typeInfo("Tennis");
+    const p = typeInfo("Prépa physique");
+    const a = typeInfo("Sorties Amis");
+    return `
+      <div class="stat-item" style="--c:${t.color}">
+        <span class="stat-num">${fmtHours(s.tennisMin)}</span>
+        <span class="stat-label">${t.emoji} Tennis</span>
+      </div>
+      <div class="stat-item" style="--c:${p.color}">
+        <span class="stat-num">${s.prepaCount}</span>
+        <span class="stat-label">${p.emoji} Prépa</span>
+      </div>
+      <div class="stat-item" style="--c:${a.color}">
+        <span class="stat-num">${s.sortiesCount}</span>
+        <span class="stat-label">${a.emoji} Sorties</span>
+      </div>`;
   }
 
   function periodLabel(key) {
     if (statsMode === "month") {
       const [y, m] = key.split("-").map(Number);
-      const label = monthFmt.format(new Date(y, m - 1, 1));
+      const label = shortMonthFmt.format(new Date(y, m - 1, 1));
       return label.charAt(0).toUpperCase() + label.slice(1);
     }
-    const monday = parseISO(key);
-    const sunday = new Date(monday.getTime() + 6 * DAY_MS);
-    return `Sem. du ${dayNumFmt.format(monday)} au ${shortDateFmt.format(sunday)}`;
+    return `Sem. ${dayNumFmt.format(parseISO(key))}`;
   }
 
-  async function renderStats() {
-    statsBody.innerHTML = "<p class='stats-loading'>Chargement…</p>";
-    let events = [];
+  async function renderSidebar() {
+    let all = [];
     try {
-      events = await store.listAll();
-    } catch (err) {
-      console.error(err);
-      statsBody.innerHTML = "";
-      showBanner("❌ Erreur de connexion à la base de données : " + (err.message || err), true);
-      return;
+      all = await store.listAll();
+    } catch {
+      return; // l'erreur est déjà affichée par render()
     }
 
-    // Regroupe par période
+    // Carte 1 : la semaine affichée
+    const weekFrom = toISO(currentMonday);
+    const weekTo = toISO(new Date(currentMonday.getTime() + 6 * DAY_MS));
+    const todayMonday = mondayOf(new Date());
+    $("cardWeekTitle").textContent =
+      currentMonday.getTime() === todayMonday.getTime()
+        ? "📆 Cette semaine"
+        : `📆 Semaine du ${dayNumFmt.format(currentMonday)}`;
+    $("cardWeek").innerHTML = statValuesHTML(summarize(all, weekFrom, weekTo));
+
+    // Carte 2 : le mois en cours
+    const now = new Date();
+    const monthFrom = toISO(new Date(now.getFullYear(), now.getMonth(), 1));
+    const monthTo = toISO(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    const monthLabel = monthFmt.format(now);
+    $("cardMonthTitle").textContent = `🗓️ ${monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}`;
+    $("cardMonth").innerHTML = statValuesHTML(summarize(all, monthFrom, monthTo));
+
+    // Carte 3 : historique par mois ou par semaine
     const groups = new Map();
-    for (const ev of events) {
-      const key = periodKey(ev);
-      if (!groups.has(key)) {
-        groups.set(key, { tennisMin: 0, prepaCount: 0, sortiesCount: 0 });
-      }
-      const g = groups.get(key);
-      const type = effectiveType(ev);
-      if (type === "Tennis") g.tennisMin += durationMinutes(ev);
-      else if (type === "Prépa physique") g.prepaCount += 1;
-      else if (type === "Sorties Amis") g.sortiesCount += 1;
+    for (const ev of all) {
+      const key = statsMode === "month" ? ev.date.slice(0, 7) : toISO(mondayOf(parseISO(ev.date)));
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(ev);
     }
+    const keys = [...groups.keys()].sort().reverse();
 
-    const keys = [...groups.keys()].sort().reverse(); // plus récent en premier
-
-    if (keys.length === 0) {
-      statsBody.innerHTML = "<p class='stats-loading'>Aucun événement pour le moment.</p>";
-      return;
-    }
-
-    const tennis = typeInfo("Tennis");
-    const prepa = typeInfo("Prépa physique");
-    const sorties = typeInfo("Sorties Amis");
+    const t = typeInfo("Tennis");
+    const p = typeInfo("Prépa physique");
+    const a = typeInfo("Sorties Amis");
 
     let html = `
-      <table class="stats-table">
-        <thead>
-          <tr>
-            <th>Période</th>
-            <th style="color:${tennis.color}">${tennis.emoji} Tennis</th>
-            <th style="color:${prepa.color}">${prepa.emoji} Prépa physique</th>
-            <th style="color:${sorties.color}">${sorties.emoji} Sorties Amis</th>
-          </tr>
-        </thead>
-        <tbody>`;
+      <div class="hist-row hist-head">
+        <span class="hist-period"></span>
+        <span style="color:${t.color}">${t.emoji}</span>
+        <span style="color:${p.color}">${p.emoji}</span>
+        <span style="color:${a.color}">${a.emoji}</span>
+      </div>`;
 
     for (const key of keys) {
-      const g = groups.get(key);
+      const evs = groups.get(key);
+      const s = summarize(evs, "0000-00-00", "9999-99-99");
       html += `
-          <tr>
-            <td class="period">${periodLabel(key)}</td>
-            <td>${g.tennisMin ? fmtHours(g.tennisMin) : "–"}</td>
-            <td>${g.prepaCount ? g.prepaCount + " séance" + (g.prepaCount > 1 ? "s" : "") : "–"}</td>
-            <td>${g.sortiesCount ? g.sortiesCount + " sortie" + (g.sortiesCount > 1 ? "s" : "") : "–"}</td>
-          </tr>`;
+      <div class="hist-row">
+        <span class="hist-period">${periodLabel(key)}</span>
+        <span>${s.tennisMin ? fmtHours(s.tennisMin) : "–"}</span>
+        <span>${s.prepaCount || "–"}</span>
+        <span>${s.sortiesCount || "–"}</span>
+      </div>`;
     }
 
-    html += `
-        </tbody>
-      </table>`;
-    statsBody.innerHTML = html;
+    if (keys.length === 0) {
+      html = `<p class="hist-empty">Aucun événement pour le moment.</p>`;
+    }
+    $("historyBody").innerHTML = html;
   }
-
-  // ---------- Bascule Agenda / Stats ----------
-  const viewToggle = $("viewToggle");
-  const agendaNav = $("agendaNav");
-
-  function setView(view) {
-    currentView = view;
-    const isStats = view === "stats";
-    weekEl.classList.toggle("hidden", isStats);
-    statsEl.classList.toggle("hidden", !isStats);
-    agendaNav.classList.toggle("hidden", isStats);
-    weekLabel.classList.toggle("hidden", isStats);
-    viewToggle.textContent = isStats ? "📅 Agenda" : "📊 Stats";
-    if (isStats) renderStats();
-    else render();
-  }
-
-  viewToggle.addEventListener("click", () => setView(currentView === "stats" ? "agenda" : "stats"));
 
   $("statsByMonth").addEventListener("click", () => {
     statsMode = "month";
     $("statsByMonth").classList.add("active");
     $("statsByWeek").classList.remove("active");
-    renderStats();
+    renderSidebar();
   });
   $("statsByWeek").addEventListener("click", () => {
     statsMode = "week";
     $("statsByWeek").classList.add("active");
     $("statsByMonth").classList.remove("active");
-    renderStats();
+    renderSidebar();
   });
 
   // ---------- Modale ----------
@@ -393,11 +388,12 @@
     }
 
     // Suggestions de titres déjà utilisés (Tennis, Poker, …)
-    store.knownTitles().then((titles) => {
+    store.listAll().then((all) => {
+      const titles = [...new Set(all.map((e) => e.title))];
       $("titleSuggestions").innerHTML = titles
         .map((t) => `<option value="${t.replace(/"/g, "&quot;")}"></option>`)
         .join("");
-    });
+    }).catch(() => {});
 
     overlay.classList.remove("hidden");
     $("title").focus();
@@ -443,7 +439,7 @@
       closeModal();
       // Afficher la semaine de l'événement créé/modifié
       currentMonday = mondayOf(parseISO(payload.date));
-      setView("agenda");
+      await render();
     } catch (err) {
       console.error(err);
       alert("Erreur lors de l'enregistrement : " + (err.message || err));
