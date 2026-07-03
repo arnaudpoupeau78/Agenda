@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1d29">
+  <title>Mon Agenda</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📅</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="banner" class="banner hidden"></div>
+
+  <header class="topbar">
+    <h1>📅 Mon Agenda</h1>
+    <div class="nav">
+      <button id="prevWeek" class="nav-btn" title="Semaine précédente">‹</button>
+      <button id="todayBtn" class="nav-btn today">Aujourd'hui</button>
+      <button id="nextWeek" class="nav-btn" title="Semaine suivante">›</button>
+    </div>
+    <div id="weekLabel" class="week-label"></div>
+  </header>
+
+  <main id="week" class="week"></main>
+
+  <!-- Modale création / édition -->
+  <div id="modalOverlay" class="overlay hidden">
+    <div class="modal">
+      <h2 id="modalTitle">Nouvel événement</h2>
+      <form id="eventForm">
+        <input type="hidden" id="eventId">
+        <label>Titre
+          <input type="text" id="title" list="titleSuggestions" placeholder="Ex : Tennis, Poker, Séance sport…" required autocomplete="off">
+          <datalist id="titleSuggestions"></datalist>
+        </label>
+        <label>Date
+          <input type="date" id="date" required>
+        </label>
+        <div class="row">
+          <label>Début
+            <input type="time" id="startTime" required step="300">
+          </label>
+          <label>Fin
+            <input type="time" id="endTime" required step="300">
+          </label>
+        </div>
+        <label>Description <span class="optional">(optionnel)</span>
+          <textarea id="description" rows="3" placeholder="Ex : 20 squats - 40 pompes"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button type="button" id="deleteBtn" class="btn danger hidden">Supprimer</button>
+          <span class="spacer"></span>
+          <button type="button" id="cancelBtn" class="btn ghost">Annuler</button>
+          <button type="submit" class="btn primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
