@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1a1d29">
   <title>Mon Agenda</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📅</text></svg>">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
   <div id="banner" class="banner hidden"></div>
@@ -20,6 +20,12 @@
     </div>
     <div id="weekLabel" class="week-label"></div>
   </header>
+
+  <!-- Onglets par personne -->
+  <div class="tabs">
+    <button class="tab" data-person="Arnaud">🎾 Arnaud</button>
+    <button class="tab" data-person="Emma">🌸 Emma</button>
+  </div>
 
   <main class="layout">
     <section id="week" class="week"></section>
@@ -92,7 +98,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=4"></script>
-  <script src="app.js?v=4"></script>
+  <script src="config.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

@@ -62,6 +62,30 @@ body {
 .nav-btn.today { font-size: 0.85rem; }
 .week-label { font-size: 0.9rem; color: var(--text-dim); width: 100%; }
 
+/* Onglets Arnaud / Emma */
+.tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 14px;
+  gap: 4px;
+}
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--text-dim);
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
 /* Disposition : agenda, puis bandeau de stats en dessous */
 .layout {
   display: flex;

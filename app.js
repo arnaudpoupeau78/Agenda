@@ -154,6 +154,20 @@
   let currentMonday = mondayOf(new Date());
   let statsMode = "month"; // granularité de l'historique
 
+  // Personne active (onglets Arnaud / Emma), mémorisée par appareil
+  const PERSON_KEY = "agenda_person";
+  let currentPerson = localStorage.getItem(PERSON_KEY) || "Arnaud";
+  if (!["Arnaud", "Emma"].includes(currentPerson)) currentPerson = "Arnaud";
+
+  // Les anciens événements n'ont pas de personne : ils sont à Arnaud.
+  function effectivePerson(ev) {
+    return ev.person || "Arnaud";
+  }
+
+  function personEvents(all) {
+    return all.filter((e) => effectivePerson(e) === currentPerson);
+  }
+
   // ---------- Éléments ----------
   const $ = (id) => document.getElementById(id);
   const weekEl = $("week");
@@ -187,7 +201,7 @@
     let events = [];
     try {
       const all = await store.listAll();
-      events = all
+      events = personEvents(all)
         .filter((e) => e.date >= fromISO && e.date <= toISOStr)
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
     } catch (err) {
@@ -295,7 +309,7 @@
   async function renderSidebar() {
     let all = [];
     try {
-      all = await store.listAll();
+      all = personEvents(await store.listAll());
     } catch {
       return; // l'erreur est déjà affichée par render()
     }
@@ -399,7 +413,7 @@
 
     // Suggestions de titres déjà utilisés (Tennis, Poker, …)
     store.listAll().then((all) => {
-      const titles = [...new Set(all.map((e) => e.title))];
+      const titles = [...new Set(personEvents(all).map((e) => e.title))];
       $("titleSuggestions").innerHTML = titles
         .map((t) => `<option value="${t.replace(/"/g, "&quot;")}"></option>`)
         .join("");
@@ -435,6 +449,7 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
+      person: currentPerson,
       type: $("type").value,
       title: $("title").value.trim(),
       date: $("date").value,
@@ -477,19 +492,60 @@
     if (e.key === "Escape" && !overlay.classList.contains("hidden")) closeModal();
   });
 
+  // ---------- Onglets Arnaud / Emma ----------
+  const tabs = document.querySelectorAll(".tab");
+  function refreshTabs() {
+    tabs.forEach((t) => t.classList.toggle("active", t.dataset.person === currentPerson));
+  }
+  tabs.forEach((t) =>
+    t.addEventListener("click", () => {
+      if (t.dataset.person === currentPerson) return;
+      currentPerson = t.dataset.person;
+      localStorage.setItem(PERSON_KEY, currentPerson);
+      refreshTabs();
+      render();
+    })
+  );
+  refreshTabs();
+
   // ---------- Navigation ----------
-  $("prevWeek").addEventListener("click", () => {
-    currentMonday = new Date(currentMonday.getTime() - 7 * DAY_MS);
+  function goWeek(delta) {
+    currentMonday = new Date(currentMonday.getTime() + delta * 7 * DAY_MS);
     render();
-  });
-  $("nextWeek").addEventListener("click", () => {
-    currentMonday = new Date(currentMonday.getTime() + 7 * DAY_MS);
-    render();
-  });
+  }
+  $("prevWeek").addEventListener("click", () => goWeek(-1));
+  $("nextWeek").addEventListener("click", () => goWeek(1));
   $("todayBtn").addEventListener("click", () => {
     currentMonday = mondayOf(new Date());
     render();
   });
+
+  // Swipe gauche/droite (mobile) pour changer de semaine
+  let touchX = null;
+  let touchY = null;
+  document.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!overlay.classList.contains("hidden")) return; // pas pendant la modale
+      touchX = e.touches[0].clientX;
+      touchY = e.touches[0].clientY;
+    },
+    { passive: true }
+  );
+  document.addEventListener(
+    "touchend",
+    (e) => {
+      if (touchX === null) return;
+      const dx = e.changedTouches[0].clientX - touchX;
+      const dy = e.changedTouches[0].clientY - touchY;
+      touchX = touchY = null;
+      // Geste franchement horizontal uniquement (pas le scroll vertical)
+      if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) {
+        goWeek(dx < 0 ? 1 : -1); // swipe vers la gauche = semaine suivante
+      }
+    },
+    { passive: true }
+  );
 
   render();
 })();
